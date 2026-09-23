@@ -1,8 +1,7 @@
 name: collect
 
 on:
-  schedule:
-    - cron: "7,22,37,52 * * * *"   # every 15 min, off the hour (UTC)
+  # Scheduling moved to Cloud Scheduler + Cloud Run
   workflow_dispatch:                # manual "Run workflow" button
 
 concurrency:
