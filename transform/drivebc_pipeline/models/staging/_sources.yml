@@ -1,0 +1,33 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: Raw landing tables written by the collector. Never modified.
+    schema: bronze
+    tables:
+      - name: raw_events
+        description: One row per poll. `payload` holds the API response exactly as it arrived.
+        columns:
+          - name: poll_ts
+            description: UTC time the poll started. Stamped by the collector, not the API.
+            tests:
+              - not_null
+          - name: payload
+            description: '{"poll_ts": ..., "pages": [<one raw response per page>]}'
+            tests:
+              - not_null
+
+      - name: poll_log
+        description: One row per poll attempt, success or failure. Gaps here mean the collector did not run.
+        columns:
+          - name: poll_ts
+            tests:
+              - not_null
+              - unique
+          - name: status
+            description: success or fail
+            tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ['success', 'fail']

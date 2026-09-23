@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: stg_drivebc__events
+    description: >
+      One row per (event_id, poll_ts). Every DriveBC event as it appeared in
+      every poll, flattened out of the raw JSON and normalised to UTC.
+    tests:
+      - unique:
+          arguments:
+            column_name: "concat(event_id, '|', cast(poll_ts as string))"
+    columns:
+      - name: poll_ts
+        description: UTC time the poll started.
+        tests:
+          - not_null
+      - name: event_id
+        description: DriveBC event id, e.g. drivebc.ca/DBC-82106. Stable across polls.
+        tests:
+          - not_null
+      - name: event_type
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['CONSTRUCTION', 'INCIDENT', 'SPECIAL_EVENT', 'WEATHER_CONDITION', 'ROAD_CONDITION']
+      - name: severity
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['MINOR', 'MODERATE', 'MAJOR', 'UNKNOWN']
+      - name: created_utc
+        description: When DriveBC created the event. Independent of when we polled.
+        tests:
+          - not_null
+      - name: updated_utc
+        description: When DriveBC last changed the event. Use this to detect changes, not a hash of the row.
+        tests:
+          - not_null
