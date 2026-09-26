@@ -32,6 +32,9 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   drivebc_pipeline:
     staging:
-      +materialized: view
+      # A table, not a view: reading a view re-parses all of bronze's JSON on
+      # every query, so each test and mart paid a full scan. As a table, bronze
+      # is scanned once per dbt run and everything downstream reads columns.
+      +materialized: table
     marts:
       +materialized: table

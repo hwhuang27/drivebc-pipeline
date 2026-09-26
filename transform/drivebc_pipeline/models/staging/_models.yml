@@ -29,6 +29,12 @@ models:
           - accepted_values:
               arguments:
                 values: ['MINOR', 'MODERATE', 'MAJOR', 'UNKNOWN']
+      - name: area_name
+        description: >
+          DriveBC district. Every event has had one so far; if this test ever
+          fails, the feed has changed and district counts would be incomplete.
+        tests:
+          - not_null
       - name: created_utc
         description: When DriveBC created the event. Independent of when we polled.
         tests:

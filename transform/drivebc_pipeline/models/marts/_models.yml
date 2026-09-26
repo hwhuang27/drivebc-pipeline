@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: fct_active_events_by_district
+    description: >
+      How many DriveBC events were active in each district at each poll.
+      One row per (poll_ts, area_name). Built only from polls that succeeded,
+      so a poll the collector missed is absent from the series rather than
+      appearing as zero events.
+    tests:
+      - unique:
+          arguments:
+            column_name: "concat(cast(poll_ts as string), '|', area_name)"
+    columns:
+      - name: poll_ts
+        description: UTC time the poll started.
+        tests:
+          - not_null
+      - name: area_name
+        description: DriveBC district, e.g. Lower Mainland District.
+        tests:
+          - not_null
+      - name: active_events
+        description: Distinct events the district had in this poll.
+        tests:
+          - not_null
