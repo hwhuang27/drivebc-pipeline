@@ -1,0 +1,6 @@
+# Regenerated on every dbt run, so there is no reason to ship them.
+drivebc_pipeline/target/
+drivebc_pipeline/dbt_packages/
+drivebc_pipeline/logs/
+logs/
+**/*.log
