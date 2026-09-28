@@ -3,10 +3,11 @@ version: 2
 models:
   - name: fct_active_events_by_district
     description: >
-      How many DriveBC events were active in each district at each poll.
-      One row per (poll_ts, area_name). Built only from polls that succeeded,
-      so a poll the collector missed is absent from the series rather than
-      appearing as zero events.
+      How many DriveBC events were active in each district at each poll, split
+      by event type. One row per (poll_ts, area_name). Built only from polls
+      that succeeded, so a poll the collector missed is absent from the series
+      rather than appearing as zero events. A type with no events in a district
+      is a literal 0, so no combination is ever missing.
     tests:
       - unique:
           arguments:
@@ -20,7 +21,30 @@ models:
         description: DriveBC district, e.g. Lower Mainland District.
         tests:
           - not_null
-      - name: active_events
-        description: Distinct events the district had in this poll.
+      - name: construction_events
+        description: Planned road work active in this district at this poll.
+        tests:
+          - not_null
+      - name: special_events
+        description: Fairs, sporting events and similar.
+        tests:
+          - not_null
+      - name: incident_events
+        description: Accidents and other unexpected events.
+        tests:
+          - not_null
+      - name: weather_condition_events
+        description: Weather affecting the road.
+        tests:
+          - not_null
+      - name: road_condition_events
+        description: Road status that might affect travellers.
+        tests:
+          - not_null
+      - name: total_events
+        description: >
+          All events active in this district at this poll. Counted independently
+          of the five type columns, so if DriveBC ever adds a type, this still
+          reflects reality while the staging accepted_values test flags the change.
         tests:
           - not_null
