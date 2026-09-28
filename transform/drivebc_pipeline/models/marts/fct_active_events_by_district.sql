@@ -8,6 +8,7 @@ with successful_polls as (
     select poll_ts
     from {{ source('bronze', 'poll_log') }}
     where status = 'success'
+      and poll_ts >= timestamp('{{ var("uniform_polling_from") }}')
 
 ),
 

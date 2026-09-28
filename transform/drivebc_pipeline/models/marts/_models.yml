@@ -7,7 +7,9 @@ models:
       by event type. One row per (poll_ts, area_name). Built only from polls
       that succeeded, so a poll the collector missed is absent from the series
       rather than appearing as zero events. A type with no events in a district
-      is a literal 0, so no combination is ever missing.
+      is a literal 0, so no combination is ever missing. The series starts at the
+      uniform_polling_from variable, since polling intervals before that ranged
+      from 15 minutes to several hours and would weight those days unevenly.
     tests:
       - unique:
           arguments:
