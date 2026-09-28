@@ -30,6 +30,10 @@ Collection and transformation run on **separate schedules**: polling needs to be
 frequent enough to catch short-lived incidents, while transforming more than once
 a day would add cost without adding information.
 
+Both Cloud Run jobs run as a service account with only `bigquery.jobUser` and
+`bigquery.dataEditor`; credentials are resolved from the attached identity at
+runtime, so no key material exists in the repository or in CI.
+
 ## Questions it answers
 
 **Now**
@@ -64,27 +68,21 @@ is **absent from the series** rather than appearing as zero events.
 
 **Cloud Scheduler instead of GitHub Actions cron.**
 The collector originally ran on GitHub Actions. Against a 15-minute schedule it
-fired twice in twelve hours, and `bronze.poll_log` recorded the gaps: 134, 193,
-197 and 319 minutes. GitHub's own documentation says scheduled workflows "can be
+fired twice in twelve hours. GitHub's own documentation says scheduled workflows "can be
 delayed during periods of high loads" and that "some queued jobs may be dropped".
 Cloud Scheduler has fired on time since. The workflow file is kept for manual runs.
 
 **30-minute polling, not 15 or 60.**
 Measured against four days of 15-minute data: hourly polling would have missed
-**16% of incidents entirely**, 30-minute polling misses about **6%**. Half of all
+16% of incidents entirely, 30-minute polling misses about 6%. Half of all
 incidents observed had a lifespan under an hour, which is why the interval matters
 at all. 30 minutes halves the storage of 15-minute polling for a small loss in
 coverage.
 
 **One raw JSON row per poll, not parsed columns.**
 The collector does no interpretation. Every parsing decision lives in dbt, where
-it can be corrected and re-run against history. This is also what makes it safe
-for the collector to be simple.
-
-**A poll log, not just event data.**
-An event disappearing from the feed is the only signal that it ended. That signal
-means nothing unless you know a poll actually ran, so every attempt is recorded,
-including failures.
+it can be corrected and re-run against the history already collected. It is also
+what keeps the collector small enough to trust.
 
 **Tables, not views, for dbt models.**
 Staging began as a view. Because a view re-runs its query on every read, each of
@@ -92,21 +90,6 @@ the 20-odd tests and the mart paid a full scan of bronze's JSON — about a doze
 full scans per `dbt build`. As a table, bronze is read once per run and everything
 downstream reads only the columns it needs: the mart now processes 3.7 MiB instead
 of 157 MiB.
-
-**Separate dev and prod datasets.**
-Local runs write to `dbt_david`; the scheduled Cloud Run job writes to `dbt_prod`
-via a separate dbt target. Local experiments therefore cannot damage the tables a
-dashboard reads.
-
-**No long-lived credentials.**
-The Cloud Run jobs use an attached service account with only `bigquery.jobUser`
-and `bigquery.dataEditor`. When the collector ran on GitHub Actions it used
-Workload Identity Federation rather than a stored key file. No key material
-exists in the repository or in CI.
-
-**Counts of events use `COUNT(*)`, not `COUNT(DISTINCT ...)`.**
-The staging model's grain is one row per (event, poll), enforced by a uniqueness
-test. That test is what makes the simpler count correct.
 
 ## Repository layout
 
