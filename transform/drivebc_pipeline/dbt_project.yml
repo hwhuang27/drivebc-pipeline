@@ -28,7 +28,7 @@ vars:
   # intervals ranged from 15 minutes to over six hours, which would weight those
   # days unevenly in any average. Marts start their series here; staging keeps
   # every poll, so the earlier history is still queryable.
-  uniform_polling_from: '2026-09-26 05:30:00+00'
+  uniform_polling_from: '2026-09-26 06:00:00+00'
 
 
 # Configuring models
