@@ -19,6 +19,13 @@ models:
         description: UTC time the poll started.
         tests:
           - not_null
+      - name: poll_ts_pacific
+        description: >
+          poll_ts as local Pacific wall-clock time, for charts and time-of-day
+          analysis. Carries no timezone, so tools display it verbatim. Keep
+          poll_ts for joins and filters.
+        tests:
+          - not_null
       - name: area_name
         description: DriveBC district, e.g. Lower Mainland District.
         tests:

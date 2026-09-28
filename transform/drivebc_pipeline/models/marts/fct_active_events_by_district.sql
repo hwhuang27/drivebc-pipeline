@@ -32,6 +32,10 @@ counts_per_poll as (
 
 select
     successful_polls.poll_ts,
+    -- Local wall-clock time for charting. BC moved to permanent daylight saving
+    -- in March 2026, so Pacific is UTC-7 year-round; using the zone name rather
+    -- than a fixed offset keeps this correct if that ever changes again.
+    datetime(successful_polls.poll_ts, 'America/Vancouver') as poll_ts_pacific,
     counts_per_poll.area_name,
     counts_per_poll.construction_events,
     counts_per_poll.special_events,
