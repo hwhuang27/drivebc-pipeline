@@ -1,14 +1,17 @@
 -- How many DriveBC events were active in each district, at each poll.
 -- One row per (poll_ts, area_name).
 
-with successful_polls as (
+with polls_that_ran as (
 
-    -- Only polls that actually ran. A poll that never happened should be
-    -- missing from the series, not reported as zero events.
-    select poll_ts
-    from {{ source('bronze', 'poll_log') }}
-    where status = 'success'
-      and poll_ts >= timestamp('{{ var("uniform_polling_from") }}')
+    -- Which polls actually happened, taken from the payloads themselves rather
+    -- than from poll_log. The log row is written after the data load, so a
+    -- collector killed in between leaves real data with no log row -- that
+    -- happened on 2026-09-29 when two tasks hit the Cloud Run task timeout.
+    -- A payload is evidence the poll ran; a log row is only a claim about it.
+    -- poll_log remains the record of failures and of gaps between polls.
+    select distinct poll_ts
+    from {{ source('bronze', 'raw_events') }}
+    where poll_ts >= timestamp('{{ var("uniform_polling_from") }}')
 
 ),
 
@@ -31,11 +34,11 @@ counts_per_poll as (
 )
 
 select
-    successful_polls.poll_ts,
+    polls_that_ran.poll_ts,
     -- Local wall-clock time for charting. BC moved to permanent daylight saving
     -- in March 2026, so Pacific is UTC-7 year-round; using the zone name rather
     -- than a fixed offset keeps this correct if that ever changes again.
-    datetime(successful_polls.poll_ts, 'America/Vancouver') as poll_ts_pacific,
+    datetime(polls_that_ran.poll_ts, 'America/Vancouver') as poll_ts_pacific,
     counts_per_poll.area_name,
     counts_per_poll.construction_events,
     counts_per_poll.special_events,
@@ -43,5 +46,5 @@ select
     counts_per_poll.weather_condition_events,
     counts_per_poll.road_condition_events,
     counts_per_poll.total_events
-from successful_polls
+from polls_that_ran
 inner join counts_per_poll using (poll_ts)

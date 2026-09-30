@@ -61,16 +61,21 @@ and rebuilt from the original responses.
 
 `fct_active_events_by_district` holds one count column per DriveBC event type
 (construction, special event, incident, weather condition, road condition) plus a
-total. It is built only from polls that succeeded, so a poll the collector missed
-is **absent from the series** rather than appearing as zero events.
+total, and `poll_ts` in both UTC and Pacific time. It is built from polls that
+actually returned data, so a poll the collector missed is **absent from the
+series** rather than appearing as zero events. The series begins when polling
+settled at a steady 30-minute cadence; earlier intervals varied and would weight
+those days unevenly.
 
 ## Decisions and tradeoffs
 
-**Cloud Scheduler instead of GitHub Actions cron.**
-The collector originally ran on GitHub Actions. Against a 15-minute schedule it
-fired twice in twelve hours. GitHub's own documentation says scheduled workflows "can be
-delayed during periods of high loads" and that "some queued jobs may be dropped".
-Cloud Scheduler has fired on time since. The workflow file is kept for manual runs.
+**The mart trusts payloads, not the log.**
+Each poll writes its response to `raw_events`, then records the attempt in
+`poll_log`. Because the log row is written second, a collector killed in between
+leaves real data with no log row. The mart originally took its list of polls from
+`poll_log` and so discarded those two polls' data. It now derives them from
+`raw_events`: a payload is evidence a poll ran, while a log row is only a claim
+about it. `poll_log` remains the record of failures and of gaps between polls.
 
 **30-minute polling, not 15 or 60.**
 Measured against four days of 15-minute data: hourly polling would have missed
@@ -88,8 +93,7 @@ what keeps the collector small enough to trust.
 Staging began as a view. Because a view re-runs its query on every read, each of
 the 20-odd tests and the mart paid a full scan of bronze's JSON — about a dozen
 full scans per `dbt build`. As a table, bronze is read once per run and everything
-downstream reads only the columns it needs: the mart now processes 3.7 MiB instead
-of 157 MiB.
+downstream reads only the columns it needs.
 
 ## Repository layout
 
@@ -97,7 +101,6 @@ of 157 MiB.
 collector/          the polling script, its Dockerfile and dependencies
 transform/          the dbt project, plus the Dockerfile for the scheduled run
 infra/              setup SQL for the BigQuery datasets and tables
-.github/workflows/  the original GitHub Actions collector, kept for manual runs
 ```
 
 ## Data licence

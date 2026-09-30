@@ -71,6 +71,7 @@ def main() -> None:
     try:
         pages = fetch_all_pages()
         count = sum(len(p.get("events", [])) for p in pages)
+        print(f"fetched {count} events across {len(pages)} page(s)")
 
         # Load rows for raw event
         payload = {"poll_ts": poll_ts.isoformat(), "pages": pages}
@@ -79,6 +80,7 @@ def main() -> None:
             "payload": payload
         }]
         load_data(BRONZE_RAW_EVENTS_TABLE_ID, client, raw_event_rows)
+        print("loaded raw_events")
 
         # Load rows for poll log (success)
         poll_log_rows = [{
