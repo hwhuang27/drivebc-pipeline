@@ -1,6 +1,69 @@
 version: 2
 
 models:
+  - name: fct_event_lifecycle
+    description: >
+      One row per DriveBC event, collapsing its many per-poll observations.
+      Start times come from the API's created_utc, which does not depend on when
+      polling began. End times come from observation: an event is never marked as
+      ended, it simply stops appearing, so cleared_at is the first poll that did
+      not see it.
+    columns:
+      - name: event_id
+        description: DriveBC event id. One row per event.
+        tests:
+          - not_null
+          - unique
+      - name: event_type
+        description: Type as of the last poll that saw the event.
+        tests:
+          - not_null
+      - name: severity
+        description: Severity as of the last poll. Can change over an event's life.
+      - name: created_utc
+        description: When DriveBC created the event. Used as the start time.
+        tests:
+          - not_null
+      - name: first_seen_at
+        description: First poll that saw the event. Our observation, not its start.
+        tests:
+          - not_null
+      - name: last_seen_at
+        description: Last poll that saw the event.
+        tests:
+          - not_null
+      - name: polls_seen
+        description: >
+          How many polls saw it. Fewer than the polls between first_seen_at and
+          last_seen_at means the event disappeared and came back.
+        tests:
+          - not_null
+      - name: cleared_at
+        description: >
+          First poll that did not see the event, so the earliest time it is known
+          to have ended. Null while the event is still present.
+      - name: is_cleared
+        description: >
+          Whether the event has been seen to end. Still-open events have no
+          duration; excluding them biases medians short, because long events are
+          likelier to still be open, so the choice belongs to the query.
+        tests:
+          - not_null
+      - name: duration_minutes
+        description: cleared_at minus created_utc. Null while the event is open.
+      - name: clear_window_minutes
+        description: >
+          Uncertainty on cleared_at: the event ended somewhere between
+          last_seen_at and cleared_at. Normally one poll interval, wider if polls
+          were missed.
+      - name: was_active_at_collection_start
+        description: >
+          True when the event was already running at the first poll. Events that
+          both began and ended before collection started are absent entirely, so
+          this group is biased towards long-lived events.
+        tests:
+          - not_null
+
   - name: fct_active_events_by_district
     description: >
       How many DriveBC events were active in each district at each poll, split
